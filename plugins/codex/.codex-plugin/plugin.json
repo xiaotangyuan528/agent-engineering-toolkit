@@ -1,0 +1,27 @@
+{
+  "name": "software-technical-docs-assistant",
+  "version": "2.2.0",
+  "description": "面向软件研发团队的专业技术文档助手，专注技术架构设计、模块详细设计和技术实现文档。",
+  "author": {
+    "name": "Software Technical Docs Community"
+  },
+  "interface": {
+    "displayName": "软件技术设计与实现助手",
+    "shortDescription": "技术架构设计、模块详细设计、技术实现文档",
+    "longDescription": "专业的软件研发技术文档助手。通过五个 Skills 完成文档类型路由、技术架构设计、模块详细设计、源码级技术实现说明和专业文档审查。严格区分目标设计与当前代码事实，要求关键结论有依据。",
+    "developerName": "Software Technical Docs Community",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "帮我设计当前系统的技术架构，先梳理系统边界、质量属性和关键技术决策。",
+      "帮我编写这个模块的详细设计，覆盖接口契约、数据结构、状态机、并发和异常处理。",
+      "基于当前仓库的真实代码版本，生成这个模块的技术实现文档，关键结论提供源码依据。",
+      "请按专业标准审查这份技术架构、模块详细设计或技术实现文档。"
+    ],
+    "brandColor": "#315B7D"
+  },
+  "skills": "./skills/"
+}

@@ -15,13 +15,15 @@ def style_run(run, name="Microsoft YaHei", size=10.5, bold=None):
         run.bold = bold
 
 def add_inline(p, text):
-    for token in re.split(r"(\*\*.*?\*\*|`.*?`)", text):
+    for token in re.split(r"(\*\*.*?\*\*|`.*?`|(?<!\*)\*[^*]+\*(?!\*))", text):
         if not token:
             continue
         if token.startswith("**") and token.endswith("**"):
             r = p.add_run(token[2:-2]); style_run(r, bold=True)
         elif token.startswith("`") and token.endswith("`"):
             r = p.add_run(token[1:-1]); style_run(r, "Consolas", 9)
+        elif token.startswith("*") and token.endswith("*"):
+            r = p.add_run(token[1:-1]); style_run(r); r.italic = True
         else:
             r = p.add_run(token); style_run(r)
 

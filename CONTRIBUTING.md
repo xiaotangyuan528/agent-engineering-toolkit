@@ -23,3 +23,6 @@ python scripts/validate_package.py
 python -m pip install -r requirements-docx.txt
 python scripts/render_docx.py examples/sample-document.md -o /tmp/sample-document.docx
 ```
+
+
+[Installation](INSTALL.md) · [Compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md)

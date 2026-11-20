@@ -1,0 +1,27 @@
+name: Validate distribution
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python -m pip install -r requirements-build.txt -r requirements-docx.txt
+      - run: python scripts/build.py
+      - run: python scripts/validate_package.py
+      - run: git diff --exit-code
+      - run: python scripts/test_independent_install.py
+      - run: npm install --global @openai/codex
+      - run: python scripts/test_codex_install.py
+        timeout-minutes: 5

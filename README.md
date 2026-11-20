@@ -66,11 +66,6 @@ codex plugin marketplace list
 
 Then open the Plugins Directory in the ChatGPT desktop app, select **Agent Engineering Toolkit**, and install **Software Technical Docs Assistant**. Start a new session after installation.
 
-For sparse Git-backed marketplace sources, Codex also supports:
-
-```bash
-codex plugin marketplace add https://github.com/xiaotangyuan528/agent-engineering-toolkit.git --sparse .agents/plugins --sparse plugins/codex
-```
 
 See [INSTALL.md](INSTALL.md). A repository marketplace is not the same as publication in the universal public plugin directory.
 
@@ -140,3 +135,6 @@ examples/                       # Usage prompts and sample document
 - Use relevant sections and diagrams; do not fill templates mechanically.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
+[Installation](INSTALL.md) · [Compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md)

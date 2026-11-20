@@ -62,3 +62,6 @@ description: "编写软件模块或子系统的详细设计，覆盖职责边界
 - 错误是否可传播、可恢复、可观测？
 - 资源是否在所有路径释放？
 - 测试是否覆盖正常、边界、竞争和故障场景？
+
+## 配套资源
+相对于本 SKILL.md 所在目录读取 `assets/templates/` 的适用模板。DOCX 转换使用同目录的 `scripts/render_docx.py` 与 `requirements-docx.txt`。执行脚本时使用该资源的实际绝对路径；输入输出可以位于用户项目中。Mermaid 保留为文本。

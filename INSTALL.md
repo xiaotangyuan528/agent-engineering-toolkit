@@ -1,65 +1,44 @@
 # Installation
 
-## Standard Agent Skills
-
-Requires Node.js/npm and `npx`.
-
-List available Skills:
-
-```bash
-npx skills add xiaotangyuan528/agent-engineering-toolkit --list
-```
-
-Install all Skills globally:
-
-```bash
-npx skills add xiaotangyuan528/agent-engineering-toolkit --all -g
-```
-
-Install one Skill:
-
-```bash
-npx skills add xiaotangyuan528/agent-engineering-toolkit --skill technical-architecture-design -g
-```
-
-Omit `-g` for project-level installation. Use `-a <agent-id>` to target supported agents; repeat `-a` for multiple agents. Add `-y` for non-interactive use. Agent support depends on the installed CLI version.
-
-Official references:
-- https://github.com/vercel-labs/skills
-- https://github.com/vercel-labs/skills/blob/main/docs/commands.md
-
 ## Codex Plugin
-
-The plugin is under `plugins/codex/`. Its `skills/` entry is a symbolic link to the canonical root `skills/` directory, avoiding duplicate Skill source files.
 
 ```bash
 codex plugin marketplace add xiaotangyuan528/agent-engineering-toolkit
 codex plugin marketplace list
+codex plugin add software-technical-docs-assistant@agent-engineering-toolkit
+codex plugin list
 ```
 
-Codex also supports sparse Git-backed marketplace sources:
+If your CLI lacks `plugin add`, install from the Agent Engineering Toolkit marketplace in the desktop Plugins Directory. Start a new session, then use `$software-technical-docs-assistant:engineering-docs-router` to select the plugin Router explicitly. Natural-language selection is model-driven. See the [compatibility matrix](COMPATIBILITY.md).
+
+## Independent Agent Skills
+
+With Node.js, npm and npx available:
 
 ```bash
-codex plugin marketplace add https://github.com/xiaotangyuan528/agent-engineering-toolkit.git --sparse .agents/plugins --sparse plugins/codex
+npx skills add xiaotangyuan528/agent-engineering-toolkit --list
+npx skills add xiaotangyuan528/agent-engineering-toolkit --all -g
+npx skills add xiaotangyuan528/agent-engineering-toolkit --skill technical-architecture-design -g
 ```
 
-Then open Plugins Directory in the ChatGPT desktop app, select **Agent Engineering Toolkit**, and install **Software Technical Docs Assistant**. Start a new session after installation.
-
-The marketplace CLI command adds/tracks the source; the desktop Plugins Directory is the documented surface for browsing and installing a plugin. Repository marketplace publication is separate from the universal public plugin directory.
-
-Official reference: https://developers.openai.com/plugins/build/plugins
-
-## DOCX conversion
+The second and third commands are installation alternatives. Omit `-g` for project-local installation. Each installed skill includes its templates, converter and DOCX requirements. Paths are relative to the installed skill directory. Use the actual installed paths when invoking Python.
 
 ```bash
-python -m pip install -r requirements-docx.txt
-python scripts/render_docx.py input.md -o output.docx
+python -m pip install -r /path/to/installed/skill/requirements-docx.txt
+python /path/to/installed/skill/scripts/render_docx.py input.md -o output.docx
 ```
 
-Mermaid blocks remain fenced code text and are not rendered as Word diagrams.
+Mermaid fences remain text in Word.
 
-## Validate
+## Build and verify
 
 ```bash
+python -m pip install -r requirements-build.txt -r requirements-docx.txt
+python scripts/build.py
 python scripts/validate_package.py
+git diff --exit-code
 ```
+
+Edit the canonical SKILL.md files under skills/, shared resources at the repository root, and plugin-source.json. Rebuild after editing and commit the generated files so installs from GitHub work without a build step.
+
+[OpenAI plugin packaging](https://developers.openai.com/plugins/build/plugins) · [Vercel Skills CLI](https://github.com/vercel-labs/skills)

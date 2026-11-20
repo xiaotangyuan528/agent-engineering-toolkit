@@ -1,65 +1,114 @@
-#!/usr/bin/env python3
-"""Validate canonical Skills, Codex plugin marketplace, paths and local links."""
 from pathlib import Path
-import json, re, sys
+import ast
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import tempfile
 
-ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = {"engineering-docs-router", "technical-architecture-design", "module-detailed-design", "technical-implementation-documentation", "technical-document-review"}
-errors = []
-skills_dir = ROOT / "skills"
-found = {}
-for skill_file in skills_dir.glob("*/SKILL.md"):
-    text = skill_file.read_text(encoding="utf-8")
-    if not text.startswith("---\n"):
-        errors.append(f"{skill_file}: missing YAML frontmatter"); continue
-    parts = text.split("---", 2)
-    if len(parts) < 3:
-        errors.append(f"{skill_file}: malformed frontmatter"); continue
-    header = parts[1]
-    name = re.search(r"(?m)^name:\s*([a-z0-9-]+)\s*$", header)
-    desc = re.search(r"(?m)^description:\s*(.+)$", header)
-    if not name or not desc:
-        errors.append(f"{skill_file}: frontmatter requires name and description"); continue
-    if name.group(1) != skill_file.parent.name:
-        errors.append(f"{skill_file}: name does not match directory")
-    found[name.group(1)] = skill_file
-if set(found) != EXPECTED:
-    errors.append(f"Skill set mismatch: found={sorted(found)}")
+from build import NAMES, PLUGIN, RESOURCES, ROOT
 
-plugin_root = ROOT / "plugins/codex"
-try:
-    manifest = json.loads((plugin_root / "plugin.json").read_text(encoding="utf-8"))
-    if manifest.get("name") != "software-technical-docs-assistant":
-        errors.append("Codex plugin name mismatch")
-    if not (plugin_root / "skills").exists() or not (plugin_root / "skills/engineering-docs-router/SKILL.md").exists():
-        errors.append("Codex plugin skills link is missing or broken")
-except Exception as exc:
-    errors.append(f"Invalid plugin manifest or skills link: {exc}")
-try:
-    market = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
-    entries = market.get("plugins", [])
-    if len(entries) != 1 or entries[0].get("source", {}).get("path") != "./plugins/codex":
-        errors.append("Marketplace must expose ./plugins/codex")
-except Exception as exc:
-    errors.append(f"Invalid marketplace JSON: {exc}")
+failures = []
+blocked = []
 
-for rel in ["assets/templates/01_技术架构设计模板.md", "assets/templates/02_模块详细设计模板.md", "assets/templates/03_技术实现文档模板.md", "assets/templates/04_技术决策记录模板.md", "scripts/render_docx.py", "INSTALL.md", "CONTRIBUTING.md", "LICENSE"]:
-    if not (ROOT / rel).exists():
-        errors.append(f"Missing required path: {rel}")
+def check(label, action):
+    try:
+        action()
+    except ImportError as exc:
+        blocked.append(label)
+        print(f"BLOCKED {label}: {exc}")
+    except Exception as exc:
+        failures.append(label)
+        print(f"FAIL {label}: {exc}")
+    else:
+        print(f"PASS {label}")
 
-for md in [ROOT/"README.md", ROOT/"README.zh-CN.md", ROOT/"INSTALL.md", ROOT/"CONTRIBUTING.md"]:
-    for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", md.read_text(encoding="utf-8")):
-        if target.startswith(("http://", "https://", "#", "mailto:")): continue
-        if not (md.parent / target.split("#",1)[0]).resolve().exists():
-            errors.append(f"{md.name}: broken local link {target}")
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
 
-for f in ROOT.rglob("*"):
-    if not f.is_file() or f.is_symlink(): continue
-    try: content = f.read_text(encoding="utf-8")
-    except UnicodeDecodeError: continue
-    if re.search(r"(?i)(gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)", content):
-        errors.append(f"Potential secret detected: {f.relative_to(ROOT)}")
+def same(a, b):
+    require(hashlib.sha256(a.read_bytes()).digest() == hashlib.sha256(b.read_bytes()).digest(), str(b))
 
-if errors:
-    print("VALIDATION FAILED"); print("\n".join(f"- {e}" for e in errors)); sys.exit(1)
-print(f"PASS: {len(found)} Skills, manifests, marketplace, templates and local links")
+def skill_check(name):
+    import yaml
+    source = ROOT / "skills" / name
+    target = PLUGIN / "skills" / name
+    parts = (source / "SKILL.md").read_text(encoding="utf-8").split("---", 2)
+    require(len(parts) == 3 and not parts[0].strip(), "missing YAML delimiters")
+    header = yaml.safe_load(parts[1])
+    require(header["name"] == name and bool(header["description"]), "invalid metadata")
+    for rel in re.findall(r"`((?:assets|references|templates|scripts)/[^`]+|requirements-docx\.txt)`", parts[2]):
+        require((source / rel).exists() and (target / rel).exists(), f"missing reference {rel}")
+    same(source / "SKILL.md", target / "SKILL.md")
+    for original in RESOURCES:
+        relative = original.relative_to(ROOT)
+        same(original, source / relative)
+        same(original, target / relative)
+
+def manifest_check():
+    manifest = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
+    require(manifest == json.loads((ROOT / "plugin-source.json").read_text(encoding="utf-8")), "generated manifest drift")
+    require(manifest["version"] == "2.2.0" and manifest["skills"] == "./skills/", "wrong version or skills path")
+    require({p.name for p in (PLUGIN / "skills").iterdir()} == set(NAMES), "unexpected plugin skills")
+    for original in RESOURCES:
+        same(original, PLUGIN / original.relative_to(ROOT))
+
+def marketplace_check():
+    marketplace = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
+    entry, = marketplace["plugins"]
+    require(marketplace["name"] == "agent-engineering-toolkit", "wrong marketplace name")
+    require(entry["name"] == "software-technical-docs-assistant", "wrong plugin name")
+    require((ROOT / entry["source"]["path"]).resolve() == PLUGIN.resolve(), "incorrect marketplace target")
+
+def scan():
+    pattern = re.compile(r"gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|[A-Z]:\\Users\\", re.I)
+    for base in (ROOT / "skills", PLUGIN):
+        for path in base.rglob("*"):
+            require(not path.is_symlink(), f"symlink: {path}")
+            if path.is_file():
+                require(not pattern.search(path.read_text(encoding="utf-8")), f"sensitive pattern: {path}")
+
+def docs_check():
+    for name in ("README.md", "README.zh-CN.md", "INSTALL.md", "CONTRIBUTING.md", "COMPATIBILITY.md"):
+        content = (ROOT / name).read_text(encoding="utf-8")
+        for link in re.findall(r"\]\(([^)]+)\)", content):
+            if not link.startswith(("https://", "http://", "#", "mailto:")):
+                require((ROOT / link.split("#")[0]).exists(), f"{name}: broken link {link}")
+    install = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
+    for command in ("codex plugin marketplace add", "codex plugin add", "npx skills add", "--all -g", "--skill technical-architecture-design -g"):
+        require(command in install, f"missing command {command}")
+
+def docx_check():
+    from docx import Document
+    skill = PLUGIN / "skills" / NAMES[0]
+    script = skill / "scripts/render_docx.py"
+    ast.parse(script.read_text(encoding="utf-8"))
+    require("python-docx" in (skill / "requirements-docx.txt").read_text(), "missing DOCX dependency")
+    with tempfile.TemporaryDirectory(prefix="文档 test ") as directory:
+        source = Path(directory) / "输入.md"
+        output = Path(directory) / "输出.docx"
+        fence = chr(96) * 3
+        source.write_text("# 中文标题\n## Heading two\n普通 mixed **加粗** *斜体*\n| 名称 | Value |\n|---|---|\n| 中文 | true |\n- 项目\n1. 序号\n"
+                          + fence + "cpp\nint main() {\n    return 0;\n}\n" + fence, encoding="utf-8")
+        subprocess.run([sys.executable, str(script), str(source), "-o", str(output)], check=True)
+        document = Document(output)
+        require([p.style.name for p in document.paragraphs][:2] == ["Heading 1", "Heading 2"], "wrong headings")
+        require(document.paragraphs[0].text == "中文标题", "wrong Chinese title")
+        paragraph = document.paragraphs[2]
+        require(paragraph.text == "普通 mixed 加粗 斜体", "incorrect paragraph")
+        require(any(r.bold and r.text == "加粗" for r in paragraph.runs), "missing bold")
+        require(any(r.italic and r.text == "斜体" for r in paragraph.runs), "missing italics")
+        require(document.tables[0].cell(1, 0).text == "中文", "broken table")
+        require([p.style.name for p in document.paragraphs][3:5] == ["List Bullet", "List Number"], "broken lists")
+        require(document.paragraphs[-1].text == "int main() {\n    return 0;\n}", "broken code block")
+
+for name in NAMES:
+    check(f"frontmatter, references and SHA256: {name}", lambda: skill_check(name))
+check("manifest and plugin resources", manifest_check)
+check("marketplace", marketplace_check)
+check("symlinks and sensitive patterns", scan)
+check("documentation links and commands", docs_check)
+check("DOCX reopening and document structure", docx_check)
+sys.exit(1 if failures else 2 if blocked else 0)

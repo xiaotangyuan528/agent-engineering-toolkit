@@ -43,3 +43,6 @@ python scripts/render_docx.py input.md -o output.docx
 ```
 
 Mermaid 图保留为代码文本，不会自动渲染为 Word 图片。更多细节见 [INSTALL.md](INSTALL.md)。
+
+
+[Installation](INSTALL.md) · [Compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md)
