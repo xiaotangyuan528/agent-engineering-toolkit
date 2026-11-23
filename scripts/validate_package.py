@@ -50,7 +50,7 @@ def skill_check(name):
 def manifest_check():
     manifest = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
     require(manifest == json.loads((ROOT / "plugin-source.json").read_text(encoding="utf-8")), "generated manifest drift")
-    require(manifest["version"] == "2.2.0" and manifest["skills"] == "./skills/", "wrong version or skills path")
+    require(manifest["version"] == "2.2.1" and manifest["skills"] == "./skills/", "wrong version or skills path")
     require({p.name for p in (PLUGIN / "skills").iterdir()} == set(NAMES), "unexpected plugin skills")
     for original in RESOURCES:
         same(original, PLUGIN / original.relative_to(ROOT))
@@ -77,7 +77,7 @@ def docs_check():
             if not link.startswith(("https://", "http://", "#", "mailto:")):
                 require((ROOT / link.split("#")[0]).exists(), f"{name}: broken link {link}")
     install = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
-    for command in ("codex plugin marketplace add", "codex plugin add", "npx skills add", "--all -g", "--skill technical-architecture-design -g"):
+    for command in ("codex plugin marketplace add", "codex plugin add", "npx skills add", "--all -g", "--skill technical-implementation-documentation -g"):
         require(command in install, f"missing command {command}")
 
 def docx_check():

@@ -1,28 +1,7 @@
 # Contributing
 
-Contributions must directly improve one of these areas:
-1. Software system technical architecture design.
-2. Software module detailed design.
-3. Software technical implementation documentation.
+Keep the toolkit focused on source-grounded implementation handoffs and their review. Edit canonical skill files under skills/, then regenerate the Codex package with python scripts/build.py. Run python scripts/validate_package.py before submitting changes.
 
-Do not add PRDs, product proposals, project plans, management reports, test plans, user manuals or unrelated writing workflows.
+Keep the two skills independently usable. Verify source references against a fixed Git revision and distinguish source evidence from runtime results.
 
-## Skill changes
-- Keep each Skill independently usable.
-- Keep `skills/` as the single source of truth.
-- Do not copy Skill source files into platform adapters.
-- Use valid YAML frontmatter with `name` and `description`.
-- Make trigger conditions and scope boundaries explicit.
-- Never instruct an agent to invent source paths, symbols, line numbers, test results, performance figures or runtime facts.
-- Update examples and templates only when they improve one of the three supported document types.
-
-## Validation
-
-```bash
-python scripts/validate_package.py
-python -m pip install -r requirements-docx.txt
-python scripts/render_docx.py examples/sample-document.md -o /tmp/sample-document.docx
-```
-
-
-[Installation](INSTALL.md) · [Compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md)
+[Installation](INSTALL.md) · [Compatibility](COMPATIBILITY.md)

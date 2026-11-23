@@ -35,7 +35,7 @@ try:
             if s.get("pluginId") == plugin_id and s["enabled"]}
     if seen != set(NAMES):
         raise SystemExit(f"FAIL plugin skill discovery: {sorted(seen)}")
-    print("PASS Codex discovered all five installed plugin skills")
+    print("PASS Codex discovered both installed plugin skills")
 finally:
     process.terminate()
     process.wait(timeout=10)

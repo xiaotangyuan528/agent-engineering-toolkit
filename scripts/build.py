@@ -5,8 +5,8 @@ import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = (
-    "engineering-docs-router", "technical-architecture-design",
-    "module-detailed-design", "technical-implementation-documentation",
+
+    "technical-implementation-documentation",
     "technical-document-review",
 )
 PLUGIN = ROOT / "plugins/codex"

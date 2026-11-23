@@ -26,7 +26,7 @@ if __name__ == "__main__":
     prefix = sys.argv[1:] or (["npx.cmd"] if os.name == "nt" else ["npx"])
     try:
         install(ROOT, prefix, ["--all", "-g"], NAMES)
-        install(ROOT, prefix, ["--skill", "technical-architecture-design", "-g"], ["technical-architecture-design"])
+        install(ROOT, prefix, ["--skill", "technical-implementation-documentation", "-g"], ["technical-implementation-documentation"])
     except FileNotFoundError as exc:
         raise SystemExit(f"BLOCKED independent install: {exc}")
     except (ValueError, subprocess.CalledProcessError) as exc:
